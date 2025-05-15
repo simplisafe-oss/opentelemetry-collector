@@ -18,6 +18,12 @@ func NewTextMetricsMarshaler() pmetric.Marshaler {
 }
 
 type textMetricsMarshaler struct {
+	timeBuckets      TimeBuckets
+	startTimeBuckets TimeBuckets
+	lastWriteTime    time.Time
+}
+
+type TimeBuckets struct {
 	bucketTiny          int64
 	bucketOneSecond     int64
 	bucketFiveSeconds   int64
@@ -25,7 +31,6 @@ type textMetricsMarshaler struct {
 	bucketTwentySeconds int64
 	bucketThirtySeconds int64
 	bucketOneMinute     int64
-	lastWriteTime       time.Time
 }
 
 // MarshalMetrics pmetric.Metrics to OTLP text.
@@ -55,8 +60,8 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 
 				if !strings.HasPrefix(metric.Name(), "alb_") && !strings.HasPrefix(metric.Name(), "nlb_") {
 
-					logResourceAttrs := func(metricName string, age time.Duration, resourceMetrics pmetric.ResourceMetrics) {
-						header := fmt.Sprintf("metric age: #%s is %s old", metricName, age)
+					logResourceAttrs := func(prefix string, metricName string, age time.Duration, resourceMetrics pmetric.ResourceMetrics) {
+						header := fmt.Sprintf("%s: #%s %s", prefix, metricName, age)
 						buf.logAttributesOneLine(header, rm.Resource().Attributes())
 					}
 
@@ -67,24 +72,44 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 					}, metricName string) {
 						for l := 0; l < lenFn(); l++ {
 							datapointTime := atFn(l).Timestamp().AsTime()
-							age := now.Sub(datapointTime)
 
+							age := now.Sub(datapointTime)
 							if age > time.Minute {
-								t.bucketOneMinute++
-								logResourceAttrs(metricName, age, rm)
+								t.timeBuckets.bucketOneMinute++
+								logResourceAttrs("metricAge", metricName, age, rm)
 							} else if age > time.Second*30 {
-								t.bucketThirtySeconds++
-								logResourceAttrs(metricName, age, rm)
+								t.timeBuckets.bucketThirtySeconds++
+								logResourceAttrs("metricAge", metricName, age, rm)
 							} else if age > time.Second*20 {
-								t.bucketTwentySeconds++
+								t.timeBuckets.bucketTwentySeconds++
 							} else if age > time.Second*10 {
-								t.bucketTenSeconds++
+								t.timeBuckets.bucketTenSeconds++
 							} else if age > time.Second*5 {
-								t.bucketFiveSeconds++
+								t.timeBuckets.bucketFiveSeconds++
 							} else if age > time.Second {
-								t.bucketOneSecond++
+								t.timeBuckets.bucketOneSecond++
 							} else {
-								t.bucketTiny++
+								t.timeBuckets.bucketTiny++
+							}
+
+							startAge := now.Sub(atFn(l).StartTimestamp().AsTime())
+
+							if startAge > time.Minute {
+								t.startTimeBuckets.bucketOneMinute++
+								logResourceAttrs("metricAgeStart", metricName, startAge, rm)
+							} else if startAge > time.Second*30 {
+								t.startTimeBuckets.bucketThirtySeconds++
+								logResourceAttrs("metricAgeStart", metricName, startAge, rm)
+							} else if startAge > time.Second*20 {
+								t.startTimeBuckets.bucketTwentySeconds++
+							} else if startAge > time.Second*10 {
+								t.startTimeBuckets.bucketTenSeconds++
+							} else if startAge > time.Second*5 {
+								t.startTimeBuckets.bucketFiveSeconds++
+							} else if startAge > time.Second {
+								t.startTimeBuckets.bucketOneSecond++
+							} else {
+								t.startTimeBuckets.bucketTiny++
 							}
 						}
 					}
@@ -139,23 +164,43 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 	// Check if 30 seconds have passed since last write
 	if t.lastWriteTime.IsZero() || now.Sub(t.lastWriteTime) >= 30*time.Second {
 		buf.buf.WriteString(fmt.Sprintf("MetricAgeBuckets: %d %d %d %d %d %d %d",
-			t.bucketTiny,
-			t.bucketOneSecond,
-			t.bucketFiveSeconds,
-			t.bucketTenSeconds,
-			t.bucketTwentySeconds,
-			t.bucketThirtySeconds,
-			t.bucketOneMinute,
+			t.timeBuckets.bucketTiny,
+			t.timeBuckets.bucketOneSecond,
+			t.timeBuckets.bucketFiveSeconds,
+			t.timeBuckets.bucketTenSeconds,
+			t.timeBuckets.bucketTwentySeconds,
+			t.timeBuckets.bucketThirtySeconds,
+			t.timeBuckets.bucketOneMinute,
 		))
 
 		// Reset all buckets
-		t.bucketTiny = 0
-		t.bucketOneSecond = 0
-		t.bucketFiveSeconds = 0
-		t.bucketTenSeconds = 0
-		t.bucketTwentySeconds = 0
-		t.bucketThirtySeconds = 0
-		t.bucketOneMinute = 0
+		t.timeBuckets.bucketTiny = 0
+		t.timeBuckets.bucketOneSecond = 0
+		t.timeBuckets.bucketFiveSeconds = 0
+		t.timeBuckets.bucketTenSeconds = 0
+		t.timeBuckets.bucketTwentySeconds = 0
+		t.timeBuckets.bucketThirtySeconds = 0
+		t.timeBuckets.bucketOneMinute = 0
+
+		buf.buf.WriteString(fmt.Sprintf("MetricAgeStartBuckets: %d %d %d %d %d %d %d",
+			t.startTimeBuckets.bucketTiny,
+			t.startTimeBuckets.bucketOneSecond,
+			t.startTimeBuckets.bucketFiveSeconds,
+			t.startTimeBuckets.bucketTenSeconds,
+			t.startTimeBuckets.bucketTwentySeconds,
+			t.startTimeBuckets.bucketThirtySeconds,
+			t.startTimeBuckets.bucketOneMinute,
+		))
+
+		// Reset all buckets
+		t.startTimeBuckets.bucketTiny = 0
+		t.startTimeBuckets.bucketOneSecond = 0
+		t.startTimeBuckets.bucketFiveSeconds = 0
+		t.startTimeBuckets.bucketTenSeconds = 0
+		t.startTimeBuckets.bucketTwentySeconds = 0
+		t.startTimeBuckets.bucketThirtySeconds = 0
+		t.startTimeBuckets.bucketOneMinute = 0
+
 		t.lastWriteTime = now
 	}
 
