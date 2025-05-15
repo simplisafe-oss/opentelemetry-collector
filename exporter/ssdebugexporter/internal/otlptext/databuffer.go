@@ -47,6 +47,20 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 	}
 }
 
+func (b *dataBuffer) logAttributesOneLine(header string, m pcommon.Map) {
+	if m.Len() == 0 {
+		return
+	}
+
+	var pairs []string
+	for k, v := range m.All() {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", k, valueToString(v)))
+	}
+	if len(pairs) > 0 {
+		b.logEntry("%s: %s", header, strings.Join(pairs, ","))
+	}
+}
+
 func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, indentVal int) {
 	if m.Len() == 0 {
 		return

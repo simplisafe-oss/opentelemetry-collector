@@ -4,6 +4,7 @@
 package otlptext // import "go.opentelemetry.io/collector/exporter/ssdebugexporter/internal/otlptext"
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -51,6 +52,12 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 				// buf.logMetricDescriptor(metric)
 				// buf.logMetricDataPoints(metric)
 
+				logResourceAttrs := func(metricName string, age time.Duration, resourceMetrics pmetric.ResourceMetrics) {
+					header := fmt.Sprintf("metric age: #%s is %s old", metricName, age)
+					buf.logAttributesOneLine(header, rm.Resource().Attributes())
+
+				}
+
 				// Helper function to process datapoints and log age if needed
 				processDatapointAges := func(lenFn func() int, atFn func(int) interface{ Timestamp() pcommon.Timestamp }, metricName string) {
 					for l := 0; l < lenFn(); l++ {
@@ -59,12 +66,11 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 
 						if age > time.Minute {
 							t.bucketOneMinute++
-							buf.logEntry("metric age: #%s is %s old", metricName, age)
+							logResourceAttrs(metricName, age, rm)
 						} else if age > time.Second*30 {
 							t.bucketThirtySeconds++
-							buf.logEntry("metric age: #%s is %s old", metricName, age)
+							logResourceAttrs(metricName, age, rm)
 						} else if age > time.Second*20 {
-							buf.logEntry("metric age: #%s is %s old", metricName, age)
 							t.bucketTwentySeconds++
 						} else if age > time.Second*10 {
 							t.bucketTenSeconds++
@@ -75,7 +81,6 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 						} else {
 							t.bucketTiny++
 						}
-
 					}
 				}
 
@@ -102,7 +107,7 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 
 	// Check if 30 seconds have passed since last write
 	if t.lastWriteTime.IsZero() || now.Sub(t.lastWriteTime) >= 30*time.Second {
-		buf.logEntry("MetricAgeBuckets: %d %d %d %d %d %d %d",
+		buf.buf.WriteString(fmt.Sprintf("MetricAgeBuckets: %d %d %d %d %d %d %d",
 			t.bucketTiny,
 			t.bucketOneSecond,
 			t.bucketFiveSeconds,
@@ -110,7 +115,7 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 			t.bucketTwentySeconds,
 			t.bucketThirtySeconds,
 			t.bucketOneMinute,
-		)
+		))
 
 		// Reset all buckets
 		t.bucketTiny = 0
