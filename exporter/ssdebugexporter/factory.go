@@ -22,7 +22,7 @@ import (
 )
 
 // The value of "type" key in configuration.
-var componentType = component.MustNewType("debug")
+var componentType = component.MustNewType("ssdebug")
 
 const (
 	defaultSamplingInitial    = 2
