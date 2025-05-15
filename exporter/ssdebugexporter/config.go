@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package debugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
+package ssdebugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
 
 import (
 	"fmt"
@@ -31,9 +31,6 @@ type Config struct {
 
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

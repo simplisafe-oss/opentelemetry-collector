@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package debugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
+package ssdebugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
 
 import (
 	"context"
@@ -86,7 +86,7 @@ func TestProfilesNoErrors(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
+	le := newssdebugexporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed)
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")

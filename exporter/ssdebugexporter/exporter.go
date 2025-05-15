@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package debugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
+package ssdebugexporter // import "go.opentelemetry.io/collector/exporter/ssdebugexporter"
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type debugExporter struct {
+type ssdebugexporter struct {
 	verbosity         configtelemetry.Level
 	logger            *zap.Logger
 	logsMarshaler     plog.Marshaler
@@ -26,7 +26,7 @@ type debugExporter struct {
 	profilesMarshaler pprofile.Marshaler
 }
 
-func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+func newssdebugexporter(logger *zap.Logger, verbosity configtelemetry.Level) *ssdebugexporter {
 	var logsMarshaler plog.Marshaler
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
@@ -42,7 +42,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 		tracesMarshaler = normal.NewNormalTracesMarshaler()
 		profilesMarshaler = normal.NewNormalProfilesMarshaler()
 	}
-	return &debugExporter{
+	return &ssdebugexporter{
 		verbosity:         verbosity,
 		logger:            logger,
 		logsMarshaler:     logsMarshaler,
@@ -52,7 +52,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 	}
 }
 
-func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
+func (s *ssdebugexporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("Traces",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
 		zap.Int("spans", td.SpanCount()))
@@ -68,7 +68,7 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	return nil
 }
 
-func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
+func (s *ssdebugexporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	// s.logger.Info("Metrics",
 	// 	zap.Int("resource metrics", md.ResourceMetrics().Len()),
 	// 	zap.Int("metrics", md.MetricCount()),
@@ -85,7 +85,7 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 	return nil
 }
 
-func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
+func (s *ssdebugexporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("Logs",
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
@@ -102,7 +102,7 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (s *debugExporter) pushProfiles(_ context.Context, pd pprofile.Profiles) error {
+func (s *ssdebugexporter) pushProfiles(_ context.Context, pd pprofile.Profiles) error {
 	s.logger.Info("Profiles",
 		zap.Int("resource profiles", pd.ResourceProfiles().Len()),
 		zap.Int("sample records", pd.SampleCount()))
