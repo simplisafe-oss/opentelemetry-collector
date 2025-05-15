@@ -18,9 +18,9 @@ func NewTextMetricsMarshaler() pmetric.Marshaler {
 }
 
 type textMetricsMarshaler struct {
-	timeBuckets      TimeBuckets
-	startTimeBuckets TimeBuckets
-	lastWriteTime    time.Time
+	timeBuckets TimeBuckets
+	// startTimeBuckets TimeBuckets
+	lastWriteTime time.Time
 }
 
 type TimeBuckets struct {
@@ -76,10 +76,10 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 							age := now.Sub(datapointTime)
 							if age > time.Minute {
 								t.timeBuckets.bucketOneMinute++
-								logResourceAttrs("metricAge", metricName, age, rm)
+								logResourceAttrs("metricAgeDebug", metricName, age, rm)
 							} else if age > time.Second*30 {
 								t.timeBuckets.bucketThirtySeconds++
-								logResourceAttrs("metricAge", metricName, age, rm)
+								logResourceAttrs("metricAgeDebug", metricName, age, rm)
 							} else if age > time.Second*20 {
 								t.timeBuckets.bucketTwentySeconds++
 							} else if age > time.Second*10 {
@@ -92,25 +92,25 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 								t.timeBuckets.bucketTiny++
 							}
 
-							startAge := now.Sub(atFn(l).StartTimestamp().AsTime())
+							// startAge := now.Sub(atFn(l).StartTimestamp().AsTime())
 
-							if startAge > time.Minute {
-								t.startTimeBuckets.bucketOneMinute++
-								logResourceAttrs("metricAgeStart", metricName, startAge, rm)
-							} else if startAge > time.Second*30 {
-								t.startTimeBuckets.bucketThirtySeconds++
-								logResourceAttrs("metricAgeStart", metricName, startAge, rm)
-							} else if startAge > time.Second*20 {
-								t.startTimeBuckets.bucketTwentySeconds++
-							} else if startAge > time.Second*10 {
-								t.startTimeBuckets.bucketTenSeconds++
-							} else if startAge > time.Second*5 {
-								t.startTimeBuckets.bucketFiveSeconds++
-							} else if startAge > time.Second {
-								t.startTimeBuckets.bucketOneSecond++
-							} else {
-								t.startTimeBuckets.bucketTiny++
-							}
+							// if startAge > time.Minute {
+							// 	t.startTimeBuckets.bucketOneMinute++
+							// 	logResourceAttrs("metricAgeStart", metricName, startAge, rm)
+							// } else if startAge > time.Second*30 {
+							// 	t.startTimeBuckets.bucketThirtySeconds++
+							// 	logResourceAttrs("metricAgeStart", metricName, startAge, rm)
+							// } else if startAge > time.Second*20 {
+							// 	t.startTimeBuckets.bucketTwentySeconds++
+							// } else if startAge > time.Second*10 {
+							// 	t.startTimeBuckets.bucketTenSeconds++
+							// } else if startAge > time.Second*5 {
+							// 	t.startTimeBuckets.bucketFiveSeconds++
+							// } else if startAge > time.Second {
+							// 	t.startTimeBuckets.bucketOneSecond++
+							// } else {
+							// 	t.startTimeBuckets.bucketTiny++
+							// }
 						}
 					}
 
@@ -182,24 +182,24 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 		t.timeBuckets.bucketThirtySeconds = 0
 		t.timeBuckets.bucketOneMinute = 0
 
-		buf.buf.WriteString(fmt.Sprintf("MetricAgeStartBuckets: %d %d %d %d %d %d %d",
-			t.startTimeBuckets.bucketTiny,
-			t.startTimeBuckets.bucketOneSecond,
-			t.startTimeBuckets.bucketFiveSeconds,
-			t.startTimeBuckets.bucketTenSeconds,
-			t.startTimeBuckets.bucketTwentySeconds,
-			t.startTimeBuckets.bucketThirtySeconds,
-			t.startTimeBuckets.bucketOneMinute,
-		))
+		// buf.buf.WriteString(fmt.Sprintf("MetricAgeStartBuckets: %d %d %d %d %d %d %d",
+		// 	t.startTimeBuckets.bucketTiny,
+		// 	t.startTimeBuckets.bucketOneSecond,
+		// 	t.startTimeBuckets.bucketFiveSeconds,
+		// 	t.startTimeBuckets.bucketTenSeconds,
+		// 	t.startTimeBuckets.bucketTwentySeconds,
+		// 	t.startTimeBuckets.bucketThirtySeconds,
+		// 	t.startTimeBuckets.bucketOneMinute,
+		// ))
 
-		// Reset all buckets
-		t.startTimeBuckets.bucketTiny = 0
-		t.startTimeBuckets.bucketOneSecond = 0
-		t.startTimeBuckets.bucketFiveSeconds = 0
-		t.startTimeBuckets.bucketTenSeconds = 0
-		t.startTimeBuckets.bucketTwentySeconds = 0
-		t.startTimeBuckets.bucketThirtySeconds = 0
-		t.startTimeBuckets.bucketOneMinute = 0
+		// // Reset all buckets
+		// t.startTimeBuckets.bucketTiny = 0
+		// t.startTimeBuckets.bucketOneSecond = 0
+		// t.startTimeBuckets.bucketFiveSeconds = 0
+		// t.startTimeBuckets.bucketTenSeconds = 0
+		// t.startTimeBuckets.bucketTwentySeconds = 0
+		// t.startTimeBuckets.bucketThirtySeconds = 0
+		// t.startTimeBuckets.bucketOneMinute = 0
 
 		t.lastWriteTime = now
 	}
