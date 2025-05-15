@@ -57,12 +57,14 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 						datapointTime := atFn(l).Timestamp().AsTime()
 						age := now.Sub(datapointTime)
 
-						buf.logEntry("metric age: #%s is %s old", metricName, age)
 						if age > time.Minute {
 							t.bucketOneMinute++
+							buf.logEntry("metric age: #%s is %s old", metricName, age)
 						} else if age > time.Second*30 {
 							t.bucketThirtySeconds++
+							buf.logEntry("metric age: #%s is %s old", metricName, age)
 						} else if age > time.Second*20 {
+							buf.logEntry("metric age: #%s is %s old", metricName, age)
 							t.bucketTwentySeconds++
 						} else if age > time.Second*10 {
 							t.bucketTenSeconds++
